@@ -8,14 +8,17 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from datetime import datetime
 import photrix
-import main
+from main import Connect
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 import threading
 
-
+def generate_data(instance):
+        run=Connect()
+        run.generate_data(instance.data_queue_time, instance.data_queue_PDcurrent)
 class MyFrame(wx.Frame):
+    
     def __init__(self):
         super().__init__(None, title="Plot Display", size=(800, 800))
         self.figure = None
@@ -60,13 +63,19 @@ class MyFrame(wx.Frame):
         main_sizer.Add(self.plot_panel, 1, wx.EXPAND)  # Add plot panel to main sizer
 
         panel.SetSizer(main_sizer)
-        self.data_queue_time = []
-        self.data_queue_PDcurrent = []
 
-        # Start a thread for data collection
-        self.thread = threading.Thread(target=main.main(self.data_queue_time,self.data_queue_PDcurrent))
+        class MyClass:
+            def __init__(self):
+                self.data_queue_time = []
+                self.data_queue_PDcurrent = [] 
+        self.my_instance = MyClass()
+        self.thread = threading.Thread(target=generate_data, args=(self.my_instance,))
         self.thread.daemon = True
         self.thread.start()
+        
+    
+        # Start a thread for data collection
+        
 
     def on_select(self, event):
         wildcard = "All files (*.*)|*.*"  # You can customize the file types here
@@ -85,7 +94,7 @@ class MyFrame(wx.Frame):
         spec = importlib.util.spec_from_file_location("fitting_code", fitting_code_path)
         fitting_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(fitting_module)
-        return fitting_code_path.f(PDcurrent)
+        return fitting_module.f(PDcurrent)
        
 
     def on_generate_plot(self, event):
@@ -103,19 +112,38 @@ class MyFrame(wx.Frame):
         self.figure = Figure()  # Set initial figure size
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self.plot_panel, -1, self.figure)
-        
+        self.axes.set_xlabel('Time/s')
+        self.axes.set_ylabel('Fitted Temperature/C from pyrometer photodiode current')
         '''if self.figure:
             self.figure.clear()
             self.canvas.Destroy()'''
 
         # Generating the plot
         #with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
-             
-        fitted_temp=[self.get_fitting_function(i) for i in self.data_queue_PDcurrent]
-        self.ax.clear()
-        self.ax.plot(self.data_queue_time,fitted_temp)
-        self.canvas.draw()
-        print(fitted_temp)
+        while True:     
+            #print(self.my_instance.data_queue_PDcurrent)
+        
+            max_data_points = 2  # Adjust this value as needed
+            data_queue_len = len(self.my_instance.data_queue_time)
+            start_index = max(0, data_queue_len - max_data_points)
+    
+    # Get the most recent data points for plotting
+            recent_time = self.my_instance.data_queue_time[start_index:]
+            recent_pd_current = self.my_instance.data_queue_PDcurrent[start_index:]
+            
+            if recent_pd_current:
+                self.fitted_temp = [self.get_fitting_function(i) for i in recent_pd_current]
+                if self.figure:
+                    self.axes.clear()
+                    self.axes.scatter(recent_time, self.fitted_temp)
+                    self.canvas.draw()
+                    print(recent_time)
+                    #self.axes.scatter(self.my_instance.data_queue_time,self.fitted_temp)
+                    self.canvas.draw()
+            
+            #print(self.my_instance.data_queue_PDcurrent)
+            #print(self.my_instance.data_queue_time)
+            time.sleep(0.01)
         
         
         #self.canvas.draw()  
@@ -136,7 +164,7 @@ class MyFrame(wx.Frame):
     def on_save_plot(self, event):
     # Get current date and time
         current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        default_filename = f"plot_{current_datetime}.png"  # Default filename
+        default_filename = f"{current_datetime}_plot.png"  # Default filename
     
     # Open a directory dialog to choose the save path
         dialog = wx.DirDialog(self, "Choose Save Location", style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
@@ -147,15 +175,15 @@ class MyFrame(wx.Frame):
             filename_dialog = wx.TextEntryDialog(self, "Enter file name:", "Save Plot", default_filename)
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
-                filepath = os.path.join(save_path, filename+f"{current_datetime}.png")
+                filepath = os.path.join(save_path, f"{current_datetime}"+filename+'.png')
             # Save the plot
-                self.figure.savefig(filepath)
+            self.figure.savefig(filepath)
             filename_dialog.Destroy()
         dialog.Destroy()
 
     def on_save_data(self,event):
         current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        default_filename = f"data_{current_datetime}.txt"  # Default filename
+        default_filename = f"{current_datetime}_data.txt"  # Default filename
     
     # Open a directory dialog to choose the save path
         dialog = wx.DirDialog(self, "Choose Save Location", style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
@@ -166,18 +194,20 @@ class MyFrame(wx.Frame):
             filename_dialog = wx.TextEntryDialog(self, "Enter file name:", "Save Data", default_filename)
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
-                filepath = os.path.join(save_path, filename+f"{current_datetime}.txt")
+                filepath = os.path.join(save_path, f"{current_datetime}"+filename+'.txt')
                 
-            
+            with open(filepath, 'w') as file:
+                file.write("Time/C,Photodiode current/A,Fitted Temperature/C\n")
+                for i in range(len(self.my_instance.data_queue_time)):
+                    file.write(f"{self.my_instance.data_queue_time[i]},{self.my_instance.data_queue_PDcurrent[i]},{self.fitted_temp[i]}\n")
                 
             filename_dialog.Destroy()
         dialog.Destroy()
-        with open(filepath, 'w') as file:
-                file.write("Time,Data X,Data Y\n")
-                for i in range(len(self.data_queue_time)):
-                    file.write(f"{i+1},{self.data_queue_time[i]},{self.data_queue_PDcurrent[i]}\n")
+        
 
-
+    def on_close(self, event):
+        #self.thread.join()  # Wait for the thread to finish
+        self.Destroy()
 
 app = wx.App()
 frame = MyFrame()

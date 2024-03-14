@@ -72,7 +72,7 @@ T=sorted(T)
 poly_T = np.polyval(coefficientsT, T)
 residuals = PDcurrent-poly_T
 poly_function = np.poly1d(coefficientsT)
-print(poly_function)
+#print(poly_function)
 # Calculate mean squared error (MSE)
 mse= np.mean(residuals ** 2)
 
@@ -100,7 +100,7 @@ for i in range(len(PDcurrent)):
     f = interp1d(poly_function(T), T,fill_value='extrapolate')
     #print(equation_expr)
     solutions=f(PDcurrent[i])
-    print(solutions)
+    #print(solutions)
     T_solution.append(solutions)
 T_difference=np.subtract(T_inter,T_solution)
 T_error=np.mean(T_difference ** 2)
