@@ -152,7 +152,7 @@ class MyFrame(wx.Frame):
                 filename = filename_dialog.GetValue()
                 filepath = os.path.join(save_path, filename+f"{current_datetime}.txt")
             # Save the plot
-                self.figure.savefig(filepath)
+                
             filename_dialog.Destroy()
         dialog.Destroy()
         main.data_save(filepath)
