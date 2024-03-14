@@ -60,6 +60,8 @@ if __name__ == "__main__":
             
             #put in threads/socket (from Zhihan)
             PDcurrent_point=decode_ieee754(current_bytes)
+            from wxGUI import MyFrame
+
             temp_point=MyFrame.get_fitting_function(PDcurrent_point) #convert to temperature using selected fitting function based on paddle materials
             time_point=time.time()
             Time.append(time_point)

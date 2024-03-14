@@ -81,7 +81,7 @@ class pyrometer:
             print("Probe didn't respond to ping...")
             return False
 
-    def determine_baud(self) -> int | None:
+    def determine_baud(self) -> int:
         possible_bauds = [115200, 9600, 19200, 38400, 57600]
         for baud in possible_bauds:
             print(f"Testing for connection with {baud} baud")

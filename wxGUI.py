@@ -11,8 +11,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from datetime import datetime
 import photrix
-import main
-
 
 class MyFrame(wx.Frame):
     def __init__(self):
@@ -93,6 +91,7 @@ class MyFrame(wx.Frame):
 
         # Generating the plot
         with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
+             import main
              main.generate_plot(self.axes)
         self.canvas.draw()  
 
@@ -155,6 +154,7 @@ class MyFrame(wx.Frame):
                 
             filename_dialog.Destroy()
         dialog.Destroy()
+        import main
         main.data_save(filepath)
 
 def run_gui():
