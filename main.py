@@ -28,8 +28,6 @@ if __name__ == "__main__":
     print("Starting stream read...")
 
     #--modified by Zhihan define data queue and threads
-    data_queue = queue.Queue() #save PDcurrent reading
-    data_queue_temp = queue.Queue() #save fitted temp value
     i=0
     time_elapse=[]
     Time=[]
