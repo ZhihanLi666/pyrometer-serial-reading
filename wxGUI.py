@@ -10,6 +10,8 @@ import contextlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from datetime import datetime
+import photrix
+import main
 
 
 class MyFrame(wx.Frame):
@@ -26,11 +28,15 @@ class MyFrame(wx.Frame):
         self.select_button = wx.Button(panel, label="Select File")
         self.select_button.Bind(wx.EVT_BUTTON, self.on_select)
         self.stop_button = wx.Button(panel, label="Stop")
+        self.stop_button.Bind(wx.EVT_BUTTON, self.on_stop)
         self.plot_panel = wx.Panel(panel)
         #self.start_button.Bind(wx.EVT_BUTTON, self.on_start)
         self.save_button = wx.Button(panel, label="Save Plot")
         self.save_button.Bind(wx.EVT_BUTTON, self.on_save_plot)
         self.save_button.Disable()  # Disable initially until plot is generated
+        self.save_data_button = wx.Button(panel, label="Save Data")
+        self.save_data_button.Bind(wx.EVT_BUTTON, self.on_save_data)
+        self.save_data_button.Disable()  # Disable initially until plot is generated
 
         # Text control to display file name
         self.file_text = wx.TextCtrl(panel, style=wx.TE_READONLY)
@@ -67,28 +73,38 @@ class MyFrame(wx.Frame):
        
 
     def on_generate_plot(self, event):
-        # Path to the Python file containing the plotting code
+        '''# Path to the Python file containing the plotting code
         plotting_code_path = self.file_text.GetValue()
 
         # Load the module from the file path
         spec = importlib.util.spec_from_file_location("plotting_code", plotting_code_path)
         plotting_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(plotting_module)
-        
+        '''
         # Create a Matplotlib figure and canvas
         self.figure = Figure()  # Set initial figure size
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self.plot_panel, -1, self.figure)
         self.save_button.Enable()
+        self.save_data_button.Enable()
         '''if self.figure:
             self.figure.clear()
             self.canvas.Destroy()'''
 
         # Generating the plot
         with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
-            plotting_module.generate_plot(self.axes)
+             main.generate_plot(self.axes)
         self.canvas.draw()  
-    
+
+    def get_fitting_function(self,PDcurrent):
+        fitting_code_path = self.file_text.GetValue()
+
+        # Load the module from the file path
+        spec = importlib.util.spec_from_file_location("fitting_code", fitting_code_path)
+        fitting_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fitting_module)
+        return fitting_code_path.f(PDcurrent)
+
     def on_resize(self, event):
         if self.canvas:
             size = self.GetClientSize()
@@ -97,12 +113,15 @@ class MyFrame(wx.Frame):
                                         size[1]/self.canvas.GetContentScaleFactor()/self.figure.get_dpi())
             self.canvas.draw()
         # Resize the canvas when the window size changes
+            
+    def on_stop(self, event):
+        photrix.exit_continuous_mode()
         
     def on_save_plot(self, event):
     # Get current date and time
         current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         default_filename = f"plot_{current_datetime}.png"  # Default filename
-
+    
     # Open a directory dialog to choose the save path
         dialog = wx.DirDialog(self, "Choose Save Location", style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
         if dialog.ShowModal() == wx.ID_OK:
@@ -117,7 +136,29 @@ class MyFrame(wx.Frame):
                 self.figure.savefig(filepath)
             filename_dialog.Destroy()
         dialog.Destroy()
-app = wx.App()
-frame = MyFrame()
-frame.Show()
-app.MainLoop()
+
+    def on_save_data(self,event):
+        current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        default_filename = f"data_{current_datetime}.txt"  # Default filename
+    
+    # Open a directory dialog to choose the save path
+        dialog = wx.DirDialog(self, "Choose Save Location", style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
+        if dialog.ShowModal() == wx.ID_OK:
+            save_path = dialog.GetPath()
+        
+        # Prompt the user for the file name
+            filename_dialog = wx.TextEntryDialog(self, "Enter file name:", "Save Data", default_filename)
+            if filename_dialog.ShowModal() == wx.ID_OK:
+                filename = filename_dialog.GetValue()
+                filepath = os.path.join(save_path, filename+f"{current_datetime}.txt")
+            # Save the plot
+                self.figure.savefig(filepath)
+            filename_dialog.Destroy()
+        dialog.Destroy()
+        main.data_save(filepath)
+
+def run_gui():
+    app = wx.App()
+    frame = MyFrame()
+    frame.Show()
+    app.MainLoop()
