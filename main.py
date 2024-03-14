@@ -1,48 +1,41 @@
 # pyrometer serial reading ieee754
 import struct
 import photrix
-
-import matplotlib.pyplot as plt
-import os
-
-import threading
-import queue
 import time
-from drawnow import drawnow, figure
-import SS_paddle_GUI_resource as S
-
-def main():
-    def decode_ieee754(data: bytes):
-        if len(data) != 4:
-            raise ValueError(
-                "Buffer length must be 4 bytes for IEEE 754 single precision float"
-            )
-        return struct.unpack(">f", data)[0]
-
-    def plotting_callback():
-        return
 
 
-    if __name__ == "__main__":
-        # Pyrometer is controlled by a mix of manual serial commands and MODBUS commands
-        pyro = photrix.pyrometer("COM1")
-        # Should implement buffered reading, but that's for later
+def decode_ieee754(data: bytes):
+    if len(data) != 4:
+        raise ValueError(
+            "Buffer length must be 4 bytes for IEEE 754 single precision float"
+        )
+    return struct.unpack(">f", data)[0]
 
-        temperature_bytes = bytearray()
-        current_bytes = bytearray()
-        electronics_temperature_bytes = bytearray()
-        diode_temperature_bytes = bytearray()
+def plotting_callback():
+    return
 
-        print("Starting stream read...")
 
-        #--modified by Zhihan define data queue and threads
-        data_queue = queue.Queue() #save PDcurrent reading
-        data_queue_temp = queue.Queue() #save fitted temp value
-        i=0
-        time_elapse=[]
-        Time=[]
-        PDcurrents=[]
-        Temps=[]
+if __name__ == "__main__":
+    # Pyrometer is controlled by a mix of manual serial commands and MODBUS commands
+    pyro = photrix.pyrometer("COM1")
+    # Should implement buffered reading, but that's for later
+
+    temperature_bytes = bytearray()
+    current_bytes = bytearray()
+    electronics_temperature_bytes = bytearray()
+    diode_temperature_bytes = bytearray()
+
+    print("Starting stream read...")
+
+    #--modified by Zhihan define data queue and threads
+    data_queue = queue.Queue() #save PDcurrent reading
+    data_queue_temp = queue.Queue() #save fitted temp value
+    i=0
+    time_elapse=[]
+    Time=[]
+    PDcurrents=[]
+    Temps=[]
+    def main(time_elapse,PDcurrents):
         while True:
             header_byte = pyro.get_unescaped_byte()
             if header_byte == b"\x80":
@@ -74,20 +67,16 @@ def main():
                     diode_temperature_bytes.extend(pyro.get_escaped_byte())'''
             if current_bytes != b"":
                     PDcurrent_point=decode_ieee754(current_bytes)
-                    import wxGUI.MyFrame as MyFrame
-                    temp_point=MyFrame.get_fitting_function(PDcurrent_point) #convert to temperature using selected fitting function based on paddle materials
                     time_point=time.time()
                     Time.append(time_point)
                     PDcurrents.append(PDcurrent_point)
-                    Temps.append(temp_point)
                     if i==0:
                         time_elapse.append(0)
                     else:
                         time_elapse.append(time_elapse[i-1]+Time[i]-Time[i-1])
-                    data_queue.put((time_elapse[i], PDcurrent_point))
-                    data_queue_temp.put((time_elapse[i], temp_point))
                     i+=1
-            def makeplot():
+
+            '''def makeplot():
                 x_data, y_data = [], [] #PDcurrent
                 x1_data,y1_data=[],[] #temp
                 plt.ion()  # Enable interactive mode
@@ -129,7 +118,7 @@ def main():
             
             
             drawnow(makeplot)
-            
+            '''
 
             
             output_string = ""

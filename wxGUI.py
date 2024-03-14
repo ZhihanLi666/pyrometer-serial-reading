@@ -2,9 +2,6 @@ import wx
 import os
 import sys
 import importlib.util
-import wx
-import sys
-import importlib.util
 from io import StringIO
 import contextlib
 from matplotlib.figure import Figure
@@ -12,6 +9,11 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from datetime import datetime
 import photrix
 import main
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import threading
+
 
 class MyFrame(wx.Frame):
     def __init__(self):
@@ -58,7 +60,13 @@ class MyFrame(wx.Frame):
         main_sizer.Add(self.plot_panel, 1, wx.EXPAND)  # Add plot panel to main sizer
 
         panel.SetSizer(main_sizer)
-        
+        self.data_queue_time = []
+        self.data_queue_PDcurrent = []
+
+        # Start a thread for data collection
+        self.thread = threading.Thread(target=main.main(self.data_queue_time,self.data_queue_PDcurrent))
+        self.thread.daemon = True
+        self.thread.start()
 
     def on_select(self, event):
         wildcard = "All files (*.*)|*.*"  # You can customize the file types here
@@ -69,10 +77,20 @@ class MyFrame(wx.Frame):
         dialog.Destroy()
         # Sizer for layout
     
-       
+    
+    def get_fitting_function(self,PDcurrent):
+        fitting_code_path = self.file_text.GetValue()
+
+        # Load the module from the file path
+        spec = importlib.util.spec_from_file_location("fitting_code", fitting_code_path)
+        fitting_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fitting_module)
+        return fitting_code_path.f(PDcurrent)
        
 
     def on_generate_plot(self, event):
+        self.save_button.Enable()
+        self.save_data_button.Enable()
         '''# Path to the Python file containing the plotting code
         plotting_code_path = self.file_text.GetValue()
 
@@ -82,30 +100,25 @@ class MyFrame(wx.Frame):
         spec.loader.exec_module(plotting_module)
         '''
         # Create a Matplotlib figure and canvas
-        '''self.figure = Figure()  # Set initial figure size
+        self.figure = Figure()  # Set initial figure size
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self.plot_panel, -1, self.figure)
         
-        if self.figure:
+        '''if self.figure:
             self.figure.clear()
-            self.canvas.Destroy()
+            self.canvas.Destroy()'''
 
         # Generating the plot
-        with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
-             '''
-        self.save_button.Enable()
-        self.save_data_button.Enable()
-        main.main()
+        #with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
+             
+        fitted_temp=[self.get_fitting_function(i) for i in self.data_queue_PDcurrent]
+        self.ax.clear()
+        self.ax.plot(self.data_queue_time,fitted_temp)
+        self.canvas.draw()
+        print(fitted_temp)
+        
+        
         #self.canvas.draw()  
-
-    def get_fitting_function(self,PDcurrent):
-        fitting_code_path = self.file_text.GetValue()
-
-        # Load the module from the file path
-        spec = importlib.util.spec_from_file_location("fitting_code", fitting_code_path)
-        fitting_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(fitting_module)
-        return fitting_code_path.f(PDcurrent)
 
     def on_resize(self, event):
         if self.canvas:
@@ -154,12 +167,16 @@ class MyFrame(wx.Frame):
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
                 filepath = os.path.join(save_path, filename+f"{current_datetime}.txt")
+                
             
                 
             filename_dialog.Destroy()
         dialog.Destroy()
-        import main
-        main.data_save(filepath)
+        with open(filepath, 'w') as file:
+                file.write("Time,Data X,Data Y\n")
+                for i in range(len(self.data_queue_time)):
+                    file.write(f"{i+1},{self.data_queue_time[i]},{self.data_queue_PDcurrent[i]}\n")
+
 
 
 app = wx.App()
