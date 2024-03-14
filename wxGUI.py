@@ -43,6 +43,7 @@ class MyFrame(wx.Frame):
         button_sizer.Add(self.stop_button, 0, wx.ALL | wx.CENTER, 5)
         button_sizer.Add(self.plot_button, 0, wx.ALL | wx.CENTER, 5)
         button_sizer.Add(self.save_button, 0, wx.ALL | wx.CENTER, 5)
+        button_sizer.Add(self.save_data_button, 0, wx.ALL | wx.CENTER, 5)
 
         text_sizer = wx.BoxSizer(wx.HORIZONTAL)
         text_sizer.Add(self.file_text, 1, wx.EXPAND | wx.ALL, 5)
