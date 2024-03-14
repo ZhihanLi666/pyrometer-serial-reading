@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from datetime import datetime
 import photrix
+import main
 
 class MyFrame(wx.Frame):
     def __init__(self):
@@ -81,20 +82,21 @@ class MyFrame(wx.Frame):
         spec.loader.exec_module(plotting_module)
         '''
         # Create a Matplotlib figure and canvas
-        self.figure = Figure()  # Set initial figure size
+        '''self.figure = Figure()  # Set initial figure size
         self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self.plot_panel, -1, self.figure)
-        self.save_button.Enable()
-        self.save_data_button.Enable()
-        '''if self.figure:
+        
+        if self.figure:
             self.figure.clear()
-            self.canvas.Destroy()'''
+            self.canvas.Destroy()
 
         # Generating the plot
         with contextlib.redirect_stdout(None):  # Redirect stdout to suppress Matplotlib messages
-             import main
-             main.generate_plot(self.axes)
-        self.canvas.draw()  
+             '''
+        self.save_button.Enable()
+        self.save_data_button.Enable()
+        main.main()
+        #self.canvas.draw()  
 
     def get_fitting_function(self,PDcurrent):
         fitting_code_path = self.file_text.GetValue()
@@ -115,7 +117,8 @@ class MyFrame(wx.Frame):
         # Resize the canvas when the window size changes
             
     def on_stop(self, event):
-        photrix.exit_continuous_mode()
+        pyro = photrix.pyrometer("COM1")
+        pyro.exit_continuous_mode()
         
     def on_save_plot(self, event):
     # Get current date and time
@@ -158,8 +161,8 @@ class MyFrame(wx.Frame):
         import main
         main.data_save(filepath)
 
-def run_gui():
-    app = wx.App()
-    frame = MyFrame()
-    frame.Show()
-    app.MainLoop()
+
+app = wx.App()
+frame = MyFrame()
+frame.Show()
+app.MainLoop()

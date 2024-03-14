@@ -46,7 +46,7 @@ class pyrometer:
         self.reboot()
 
         self.determine_baud()
-        print(f"Baud successfully determined: {self.baud}")
+        #print(f"Baud successfully determined: {self.baud}")
 
         print("Replicating TemperaSure startup conversation")
         self.startup_conversation()
