@@ -151,7 +151,7 @@ class MyFrame(wx.Frame):
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
                 filepath = os.path.join(save_path, filename+f"{current_datetime}.txt")
-            # Save the plot
+            
                 
             filename_dialog.Destroy()
         dialog.Destroy()
