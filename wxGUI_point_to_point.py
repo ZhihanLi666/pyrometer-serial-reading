@@ -214,7 +214,7 @@ class MyFrame(wx.Frame):
             filename_dialog = wx.TextEntryDialog(self, "Enter file name:", "Save Plot", default_filename)
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
-                filepath = os.path.join(save_path, f"{current_datetime}"+filename+'.png')
+                filepath = os.path.join(save_path, f"{current_datetime}"+filename)
             # Save the plot
             self.figure.savefig(filepath)
             filename_dialog.Destroy()
@@ -233,7 +233,7 @@ class MyFrame(wx.Frame):
             filename_dialog = wx.TextEntryDialog(self, "Enter file name:", "Save Data", default_filename)
             if filename_dialog.ShowModal() == wx.ID_OK:
                 filename = filename_dialog.GetValue()
-                filepath = os.path.join(save_path, f"{current_datetime}"+filename+'.txt')
+                filepath = os.path.join(save_path, f"{current_datetime}"+filename)
                 
             with open(filepath, 'w') as file:
                 file.write("Time/C,Photodiode current/A,Fitted Temperature/C\n")
